@@ -1,6 +1,6 @@
 /* ============================================================= */
 /*  Raw Material Requisition – Production Ready (Nov 17, 2025)   */
-/*  Handles any sheet name, any column order, any casing        */
+/*  FIXED: Proper initialization and event handling              */
 /* ============================================================= */
 
 let masterData = [], requisitionRows = [], uploadedFileName = '';
@@ -16,12 +16,40 @@ let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
 /* -------------------- Wait for Libraries -------------------- */
 function waitForLibs() {
   return new Promise(resolve => {
+    let attempts = 0;
+    const maxAttempts = 100; // 5 seconds max wait
+    
     const check = () => {
-      if (typeof XLSX !== 'undefined' && typeof saveAs !== 'undefined') {
-        console.log('%cXLSX & saveAs loaded', 'color:green');
+      attempts++;
+      
+      const xlsxLoaded = typeof XLSX !== 'undefined';
+      const saveAsLoaded = typeof saveAs !== 'undefined';
+      
+      console.log(`Checking libraries... Attempt ${attempts}`, {
+        XLSX: xlsxLoaded,
+        saveAs: saveAsLoaded
+      });
+      
+      if (xlsxLoaded && saveAsLoaded) {
+        console.log('%c✓ XLSX & saveAs loaded successfully!', 'color:green; font-weight:bold');
         const status = document.getElementById('libStatus');
-        if (status) status.textContent = 'XLSX Check | saveAs Check';
-        resolve();
+        if (status) {
+          status.textContent = '✓ Ready';
+          status.style.background = '#d4edda';
+          status.style.color = '#155724';
+        }
+        resolve(true);
+      } else if (attempts >= maxAttempts) {
+        console.error('%c✗ Libraries failed to load after 5 seconds', 'color:red; font-weight:bold');
+        console.error('Missing:', !xlsxLoaded ? 'XLSX' : '', !saveAsLoaded ? 'saveAs' : '');
+        const status = document.getElementById('libStatus');
+        if (status) {
+          status.textContent = '✗ XLSX Failed';
+          status.style.background = '#f8d7da';
+          status.style.color = '#721c24';
+        }
+        alert('CRITICAL: XLSX library failed to load.\n\nThe file upload and export features will not work.\n\nPlease:\n1. Check your internet connection\n2. Disable ad blockers\n3. Try a different browser\n4. Refresh the page');
+        resolve(false);
       } else {
         setTimeout(check, 50);
       }
@@ -74,9 +102,13 @@ async function loadAll() {
 
 /* -------------------- DOM Ready -------------------- */
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('DOM Content Loaded - Starting initialization...');
+  
+  // Wait for libraries FIRST
   await waitForLibs();
+  console.log('Libraries ready');
 
-  // Cache DOM
+  // Cache DOM elements
   fileInput = document.getElementById('masterFile');
   uploadStatus = document.getElementById('uploadStatus');
   clearFileBtn = document.getElementById('clearFileBtn');
@@ -92,17 +124,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   pageInfo = document.getElementById('pageInfo');
   searchInput = document.getElementById('searchInput');
 
-  await initDB();
-  await loadAll();
+  console.log('DOM elements cached');
 
-  // Event Listeners
+  // Initialize DB
+  await initDB();
+  console.log('Database initialized');
+
+  // Load existing data
+  await loadAll();
+  console.log('Data loaded');
+
+  // Set up all event listeners
   fileInput.addEventListener('change', handleFileUpload);
   clearFileBtn.addEventListener('click', clearAll);
   categorySelect.addEventListener('change', handleCategoryChange);
   skuSelect.addEventListener('change', handleSkuChange);
   addBtn.addEventListener('click', handleAddSku);
-  prevBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderPage(); });
-  nextBtn.addEventListener('click', () => { currentPage++; renderPage(); });
+  prevBtn.addEventListener('click', () => { 
+    currentPage = Math.max(1, currentPage - 1); 
+    renderPage(); 
+  });
+  nextBtn.addEventListener('click', () => { 
+    currentPage++; 
+    renderPage(); 
+  });
   exportBtn.addEventListener('click', handleExportAll);
   clearBtn.addEventListener('click', clearAll);
   searchInput.addEventListener('input', () => {
@@ -111,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderPage();
   });
 
-  // Dark Mode – Fixed context
+  // Dark Mode
   const darkBtn = document.getElementById('darkModeBtn');
   darkBtn.addEventListener('click', function () {
     document.body.classList.toggle('dark-mode');
@@ -125,13 +170,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     darkBtn.innerHTML = '<i class="fas fa-sun"></i>';
   }
 
+  // Print
   document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  console.log('All event listeners attached - App ready!');
 });
 
 /* -------------------- File Upload (Robust) -------------------- */
 async function handleFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  // Check if XLSX is available
+  if (typeof XLSX === 'undefined') {
+    uploadStatus.textContent = '✗ ERROR: XLSX library not loaded. Please refresh the page.';
+    uploadStatus.style.color = 'red';
+    alert('The XLSX library failed to load.\n\nPlease refresh the page and try again.\n\nIf the problem persists, check your internet connection or try a different browser.');
+    return;
+  }
 
   uploadStatus.textContent = 'Reading file...';
   uploadStatus.style.color = '';
@@ -183,7 +239,7 @@ async function handleFileUpload(e) {
       if (masterData.length === 0) throw new Error('No valid data rows found after filtering.');
 
       uploadedFileName = file.name;
-      uploadStatus.textContent = `Loaded: ${uploadedFileName} (${masterData.length} items)`;
+      uploadStatus.textContent = `✓ Loaded: ${uploadedFileName} (${masterData.length} items)`;
       uploadStatus.style.color = 'green';
       clearFileBtn.style.display = 'inline-block';
       populateCategories();
@@ -191,7 +247,7 @@ async function handleFileUpload(e) {
 
     } catch (err) {
       console.error('Upload error:', err);
-      uploadStatus.textContent = 'ERROR: ' + err.message;
+      uploadStatus.textContent = '✗ ERROR: ' + err.message;
       uploadStatus.style.color = 'red';
       masterData = [];
       categorySelect.disabled = true;
@@ -199,7 +255,7 @@ async function handleFileUpload(e) {
   };
 
   reader.onerror = () => {
-    uploadStatus.textContent = 'Failed to read file.';
+    uploadStatus.textContent = '✗ Failed to read file.';
     uploadStatus.style.color = 'red';
   };
 
@@ -288,7 +344,7 @@ function renderPage() {
 
   if (!pageItems.length) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:#888;">
-      ${searchQuery ? 'No results.' : 'No SKUs added.'}</td></tr>`;
+      ${searchQuery ? 'No results found.' : 'No SKUs added yet.'}</td></tr>`;
   }
 
   pageItems.forEach((item, i) => {
@@ -324,7 +380,9 @@ function renderPage() {
   });
 
   updateSortIcons();
-  setupCollapse(); setupInputs(); setupRemove();
+  setupCollapse(); 
+  setupInputs(); 
+  setupRemove();
   setupPagination(items.length);
 }
 
@@ -372,7 +430,8 @@ function setupInputs() {
     if (e.target.classList.contains('qty-input')) {
       const idx = +e.target.dataset.idx;
       requisitionRows[idx].qtyNeeded = Math.max(1, Math.min(99, +e.target.value || 1));
-      await saveAll(); renderPage();
+      await saveAll(); 
+      renderPage();
     }
     if (e.target.classList.contains('supplier-input')) {
       requisitionRows[+e.target.dataset.idx].supplier = e.target.value.trim();
@@ -388,7 +447,8 @@ function setupRemove() {
       const idx = +e.target.closest('.remove-btn').dataset.idx;
       if (confirm(`Remove ${requisitionRows[idx].skuName}?`)) {
         requisitionRows.splice(idx, 1);
-        await saveAll(); renderPage();
+        await saveAll(); 
+        renderPage();
       }
     }
   });
@@ -409,16 +469,22 @@ async function clearAll() {
   requisitionRows = []; masterData = []; uploadedFileName = '';
   sortField = null; searchQuery = ''; searchInput.value = ''; currentPage = 1;
   await saveAll();
-  uploadStatus.textContent = 'Upload MasterTable.xlsx'; clearFileBtn.style.display = 'none';
-  categorySelect.innerHTML = '<option value="">-- Category --</option>'; categorySelect.disabled = true;
-  skuSelect.innerHTML = '<option value="">-- SKU --</option>'; skuSelect.disabled = true;
+  uploadStatus.textContent = 'Upload MasterTable.xlsx'; 
+  uploadStatus.style.color = '';
+  clearFileBtn.style.display = 'none';
+  categorySelect.innerHTML = '<option value="">-- Category --</option>'; 
+  categorySelect.disabled = true;
+  skuSelect.innerHTML = '<option value="">-- SKU --</option>'; 
+  skuSelect.disabled = true;
+  skuCodeDisplay.value = '';
+  addBtn.disabled = true;
   renderPage();
 }
 
 /* -------------------- Export All -------------------- */
 function handleExportAll() {
   if (typeof XLSX === 'undefined' || typeof saveAs === 'undefined') {
-    alert("Export library not loaded. Please refresh.");
+    alert("Export libraries not loaded. Please refresh the page.");
     return;
   }
 
