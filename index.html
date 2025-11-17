@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Raw Material Requisition</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Libraries first -->
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.20.0/dist/xlsx.full.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <!-- Application script last -->
+  <script defer src="script.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h2>Raw Material Requisition</h2>
+      <div class="header-actions">
+        <button id="darkModeBtn" title="Dark Mode"><i class="fas fa-moon"></i></button>
+        <button id="printBtn" title="Print"><i class="fas fa-print"></i></button>
+      </div>
+    </div>
+
+    <div class="upload-box">
+      <input type="file" id="masterFile" accept=".xlsx" />
+      <span id="uploadStatus">Upload MasterTable.xlsx</span>
+      <button id="clearFileBtn" style="display:none;">Clear</button>
+    </div>
+
+    <div class="top-controls">
+      <select id="categorySelect" disabled><option value="">-- Category --</option></select>
+      <select id="skuSelect" disabled><option value="">-- SKU --</option></select>
+      <input type="text" id="skuCodeDisplay" placeholder="Code" readonly />
+      <button id="addBtn" disabled>Add</button>
+      <input type="text" id="searchInput" placeholder="Search Code/SKU/Cat..." />
+      <button id="exportBtn" disabled>Export All</button>
+      <button id="clearBtn" class="btn-clear">Clear All</button>
+    </div>
+
+    <div class="table-container">
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="sortable" data-sort="skuCode">Code <i class="fas fa-sort sort-icon"></i></th>
+            <th class="sortable" data-sort="skuName">SKU <i class="fas fa-sort sort-icon"></i></th>
+            <th class="sortable" data-sort="category">Cat <i class="fas fa-sort sort-icon"></i></th>
+            <th>Qty</th>
+            <th>Supplier</th>
+            <th>Mats</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="reqBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+      <span id="pageInfo">1 / 1</span>
+      <button id="nextBtn"><i class="fas fa-chevron-right"></i></button>
+    </div>
+  </div>
+
+  <div id="libStatus" style="position:fixed;bottom:10px;right:10px;font-size:10px;color:#888;z-index:999;"></div>
+</body>
+</html>

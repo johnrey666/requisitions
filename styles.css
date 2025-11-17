@@ -1,0 +1,518 @@
+/* ============================================================= */
+/*  Raw Material Requisition – MODERN & CLEAN                   */
+/*  One Row: Category | SKU | Code | Add | Search | Export All  */
+/*  Dark Mode | Print | Sorting | Responsive                    */
+/* ============================================================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  background: #f9f9fb;
+  color: #2d2d2d;
+  overflow: hidden;
+}
+
+body.dark-mode {
+  background: #0a0a0a;
+  color: #e0e0e0;
+}
+
+/* Container */
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+body.dark-mode .container {
+  background: #1a1a1a;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+/* Header – Yellow */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #fff8e1;
+  color: #5d4037;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid #ffe082;
+}
+
+body.dark-mode .header {
+  background: #3d3000;
+  color: #ffecb3;
+  border-color: #5d4037;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+.header-actions button {
+  background: none;
+  border: none;
+  color: #5d4037;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+body.dark-mode .header-actions button {
+  color: #ffecb3;
+}
+
+.header-actions button:hover {
+  background: rgba(255, 236, 179, 0.4);
+}
+
+body.dark-mode .header-actions button:hover {
+  background: rgba(255, 236, 179, 0.15);
+}
+
+/* Upload Box */
+.upload-box {
+  padding: 8px 14px;
+  background: white;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+body.dark-mode .upload-box {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+#masterFile {
+  flex: 1;
+  min-width: 160px;
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 11px;
+  background: white;
+}
+
+body.dark-mode #masterFile {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #fff;
+}
+
+#uploadStatus {
+  font-weight: 500;
+  color: #555;
+  white-space: nowrap;
+}
+
+body.dark-mode #uploadStatus {
+  color: #ccc;
+}
+
+#clearFileBtn {
+  background: #ef5350;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+#clearFileBtn:hover {
+  background: #e53935;
+}
+
+/* Top Controls – ONE ROW */
+.top-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  background: white;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+body.dark-mode .top-controls {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+.top-controls select,
+.top-controls input,
+.top-controls button {
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  height: 32px;
+}
+
+.top-controls select {
+  min-width: 110px;
+}
+
+#skuCodeDisplay {
+  width: 80px;
+  text-align: center;
+  background: #f9f9f9;
+  font-weight: 600;
+}
+
+body.dark-mode #skuCodeDisplay {
+  background: #2d2d2d;
+  color: #fff;
+}
+
+#searchInput {
+  flex: 1;
+  min-width: 140px;
+  max-width: 200px;
+}
+
+#addBtn {
+  background: #007bff;
+  color: white;
+}
+
+#addBtn:disabled {
+  background: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+#exportBtn {
+  background: #28a745;
+  color: white;
+  font-weight: 600;
+}
+
+#exportBtn:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.btn-clear {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-clear:hover:not(:disabled) {
+  background: #c82333;
+}
+
+body.dark-mode .top-controls select,
+body.dark-mode .top-controls input,
+body.dark-mode .top-controls button {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #fff;
+}
+
+body.dark-mode .top-controls button:not(:disabled) {
+  color: white;
+}
+
+/* Table Container */
+.table-container {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.main-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.main-table th {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 6px 6px;
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-size: 10px;
+  white-space: nowrap;
+  border-bottom: 1px solid #eee;
+}
+
+body.dark-mode .main-table th {
+  background: #2d2d2d;
+  color: #ccc;
+  border-color: #444;
+}
+
+.main-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+body.dark-mode .main-table td {
+  border-color: #333;
+}
+
+.main-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+body.dark-mode .main-table tbody tr:hover {
+  background: #2a2a2a;
+}
+
+/* Inputs in Table */
+.main-table input[type="number"],
+.main-table input[type="text"] {
+  width: 50px;
+  padding: 3px 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 11px;
+  background: white;
+}
+
+.main-table input.supplier-input {
+  width: 100px;
+}
+
+body.dark-mode .main-table input {
+  background: #2d2d2d;
+  color: #fff;
+  border-color: #444;
+}
+
+/* Toggle & Remove Buttons */
+.toggle-btn,
+.remove-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+body.dark-mode .toggle-btn,
+body.dark-mode .remove-btn {
+  color: #aaa;
+}
+
+.toggle-btn:hover {
+  background: #f0f0f0;
+}
+
+body.dark-mode .toggle-btn:hover {
+  background: #333;
+}
+
+.remove-btn {
+  color: #ef5350;
+}
+
+.remove-btn:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+
+body.dark-mode .remove-btn:hover {
+  background: #4a1a1a;
+  color: #ff8a80;
+}
+
+/* Collapse Animation */
+.collapse-anim-wrapper {
+  overflow: hidden;
+  height: 0;
+  transition: height 0.25s ease;
+}
+
+.collapse-content {
+  padding: 6px 6px;
+  background: #f8f9fa;
+  border-top: 1px dashed #eee;
+}
+
+body.dark-mode .collapse-content {
+  background: #222;
+  border-color: #444;
+}
+
+.inner-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.inner-table th {
+  background: #f0f0f0;
+  padding: 4px 6px;
+  font-weight: 600;
+  font-size: 10px;
+  color: #555;
+}
+
+body.dark-mode .inner-table th {
+  background: #333;
+  color: #ccc;
+}
+
+.inner-table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #eee;
+}
+
+body.dark-mode .inner-table td {
+  border-color: #444;
+}
+
+/* Pagination */
+.pagination {
+  padding: 6px 14px;
+  background: white;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+body.dark-mode .pagination {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+.pagination button {
+  background: white;
+  border: 1px solid #ddd;
+  color: #555;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  min-width: 30px;
+}
+
+body.dark-mode .pagination button {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #ccc;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+body.dark-mode .pagination button:hover:not(:disabled) {
+  background: #333;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Sortable Headers */
+.main-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 20px !important;
+}
+
+.main-table th.sortable:hover {
+  background: #f0f0f0 !important;
+}
+
+body.dark-mode .main-table th.sortable:hover {
+  background: #333 !important;
+}
+
+.sort-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.main-table th.sortable:hover .sort-icon {
+  color: #555;
+}
+
+body.dark-mode .main-table th.sortable:hover .sort-icon {
+  color: #ccc;
+}
+
+.main-table th.sort-asc .sort-icon {
+  color: #007bff !important;
+}
+
+.main-table th.sort-desc .sort-icon {
+  color: #dc3545 !important;
+}
+
+/* Print Styles */
+@media print {
+  body, .container {
+    background: white !important;
+    color: black !important;
+  }
+  .header {
+    background: #fff8e1 !important;
+    color: #000 !important;
+  }
+  .header-actions, .upload-box, .top-controls, .pagination {
+    display: none !important;
+  }
+  .main-table {
+    font-size: 9pt;
+  }
+  .main-table th, .main-table td {
+    border: 1px solid #ddd !important;
+    padding: 4px !important;
+  }
+  .collapse-content {
+    display: block !important;
+    height: auto !important;
+  }
+  .collapse-anim-wrapper {
+    height: auto !important;
+  }
+}
