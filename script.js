@@ -81,8 +81,8 @@ async function saveAll() {
 async function loadAll() {
   if (!db) return;
   const req = db.transaction(STORE_NAME).objectStore(STORE_NAME).get(1);
-  return new Promise(resolve => {
-    req.onsuccess = () => {
+  return new Promise(async resolve => {
+    req.onsuccess = async () => {
       if (req.result) {
         requisitionRows = req.result.data || [];
         uploadedFileName = req.result.fileName || '';
@@ -93,11 +93,70 @@ async function loadAll() {
         }
         if (masterData.length) populateCategories();
       }
+      
+      // Auto-restore from cloud if sync is enabled and local data is empty
+      if (isSyncEnabled === null) {
+        // First time loading - check if sync was previously enabled
+        const wasSyncEnabled = localStorage.getItem('syncEnabled') === 'true';
+        if (wasSyncEnabled) {
+          await autoRestoreFromCloud();
+        }
+      }
+      
       renderPage();
       loadSyncConfig();
       resolve();
     };
   });
+}
+
+async function autoRestoreFromCloud() {
+  try {
+    console.log('Auto-restoring from cloud...');
+    const response = await fetch(SHEETS_WEB_APP_URL);
+    if (!response.ok) return;
+
+    const text = await response.text();
+    if (!text || text.includes('error')) return;
+
+    const cloudData = JSON.parse(text);
+    const cloudRows = cloudData.requisitionRows || [];
+    const cloudMaster = cloudData.masterData || [];
+    const cloudFileName = cloudData.uploadedFileName || '';
+
+    // Smart merge: prioritize cloud data if local is empty
+    if (requisitionRows.length === 0 && cloudRows.length > 0) {
+      requisitionRows = cloudRows;
+      console.log('Restored requisition rows from cloud:', cloudRows.length);
+    }
+
+    if (masterData.length === 0 && cloudMaster.length > 0) {
+      masterData = cloudMaster;
+      console.log('Restored master data from cloud:', cloudMaster.length);
+    }
+
+    if (!uploadedFileName && cloudFileName) {
+      uploadedFileName = cloudFileName;
+      uploadStatus.textContent = `Using: ${uploadedFileName} (from cloud)`;
+      clearFileBtn.style.display = 'inline-block';
+    }
+
+    if (masterData.length) populateCategories();
+    
+    // Save merged data locally
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    await tx.objectStore(STORE_NAME).put({ 
+      id: 1, 
+      data: requisitionRows, 
+      fileName: uploadedFileName, 
+      master: masterData,
+      lastModified: new Date().toISOString()
+    });
+
+    console.log('Auto-restore completed successfully');
+  } catch (err) {
+    console.warn('Auto-restore failed (this is okay):', err);
+  }
 }
 
 /* -------------------- Google Sheets Sync - FIXED -------------------- */
