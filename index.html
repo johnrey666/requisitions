@@ -3,63 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Raw Material Requisition</title>
+  <title>Raw Material Requisition - Cloud Sync</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
 
-  <!-- CRITICAL: Load libraries WITHOUT defer so they're available immediately -->
+  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   
-  <!-- Application script AFTER libraries -->
+  <!-- App Script -->
   <script defer src="script.js"></script>
 </head>
 <body>
 
   <div class="container">
+    <!-- Header -->
     <div class="header">
-      <h2>Raw Material Requisition</h2>
+      <h2><i class="fas fa-boxes"></i> Raw Material Requisition</h2>
       <div class="header-actions">
-        <button id="darkModeBtn" title="Dark Mode"><i class="fas fa-moon"></i></button>
-        <button id="printBtn" title="Print"><i class="fas fa-print"></i></button>
+        <button id="darkModeBtn" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
+        <button id="printBtn" title="Print Table"><i class="fas fa-print"></i></button>
       </div>
     </div>
 
+    <!-- Upload & Sync -->
     <div class="upload-box">
       <input type="file" id="masterFile" accept=".xlsx" />
       <span id="uploadStatus">Upload MasterTable.xlsx</span>
       <button id="clearFileBtn" style="display:none;">Clear</button>
+      
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;border-left:1px solid #ddd;padding-left:12px;">
+        <button id="configBtn" title="View Config" style="padding:4px 8px;border:1px solid #ddd;background:white;border-radius:6px;cursor:pointer;">
+          <i class="fas fa-cog"></i>
+        </button>
+        <button id="syncBtn" style="padding:4px 12px;border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;background:#6c757d;">
+          <i class="fas fa-cloud-slash"></i> Offline
+        </button>
+        <span id="syncStatus" style="font-size:10px;color:#6c757d;">Local only</span>
+      </div>
     </div>
 
+    <!-- Controls -->
     <div class="top-controls">
       <select id="categorySelect" disabled><option value="">-- Category --</option></select>
       <select id="skuSelect" disabled><option value="">-- SKU --</option></select>
       <input type="text" id="skuCodeDisplay" placeholder="Code" readonly />
-      <button id="addBtn" disabled>Add</button>
-      <input type="text" id="searchInput" placeholder="Search Code/SKU/Cat..." />
-      <button id="exportBtn" disabled>Export All</button>
-      <button id="clearBtn" class="btn-clear">Clear All</button>
+      <button id="addBtn" disabled><i class="fas fa-plus"></i> Add</button>
+      <input type="text" id="searchInput" placeholder="Search Code/SKU/Category..." />
+      <button id="exportBtn" disabled><i class="fas fa-file-excel"></i> Export All</button>
+      <button id="clearBtn" class="btn-clear"><i class="fas fa-trash"></i> Clear All</button>
     </div>
 
+    <!-- Table -->
     <div class="table-container">
       <table class="main-table">
         <thead>
           <tr>
-            <th></th>
-            <th class="sortable" data-sort="skuCode">Code <i class="fas fa-sort sort-icon"></i></th>
-            <th class="sortable" data-sort="skuName">SKU <i class="fas fa-sort sort-icon"></i></th>
-            <th class="sortable" data-sort="category">Cat <i class="fas fa-sort sort-icon"></i></th>
-            <th>Qty</th>
-            <th>Supplier</th>
-            <th>Mats</th>
-            <th></th>
+            <th style="width:40px;"></th>
+            <th class="sortable" data-sort="skuCode" style="width:100px;">Code <i class="fas fa-sort sort-icon"></i></th>
+            <th class="sortable" data-sort="skuName" style="width:200px;">SKU <i class="fas fa-sort sort-icon"></i></th>
+            <th class="sortable" data-sort="category" style="width:120px;">Category <i class="fas fa-sort sort-icon"></i></th>
+            <th style="width:60px;">Qty</th>
+            <th style="width:140px;">Supplier</th>
+            <th style="width:90px;">Qty/Unit</th>
+            <th style="width:70px;">Unit</th>
+            <th style="width:90px;">Qty/Pack</th>
+            <th style="width:70px;">Pack Unit</th>
+            <th style="width:60px;">Mats</th>
+            <th style="width:40px;"></th>
           </tr>
         </thead>
         <tbody id="reqBody"></tbody>
       </table>
     </div>
 
+    <!-- Pagination -->
     <div class="pagination">
       <button id="prevBtn"><i class="fas fa-chevron-left"></i></button>
       <span id="pageInfo">1 / 1</span>
@@ -67,6 +86,8 @@
     </div>
   </div>
 
-  <div id="libStatus" style="position:fixed;bottom:10px;right:10px;font-size:10px;color:#888;z-index:999;background:white;padding:4px 8px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">Loading...</div>
+  <div id="libStatus" style="position:fixed;bottom:10px;right:10px;font-size:10px;color:#888;z-index:999;background:white;padding:4px 8px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    Loading libraries...
+  </div>
 </body>
 </html>

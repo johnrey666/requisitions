@@ -1,7 +1,6 @@
 /* ============================================================= */
-/*  Raw Material Requisition – MODERN & CLEAN                   */
-/*  One Row: Category | SKU | Code | Add | Search | Export All  */
-/*  Dark Mode | Print | Sorting | Responsive                    */
+/*  Raw Material Requisition – CLOUD SYNC ENHANCED              */
+/*  Modern & Clean with Cloud Sync UI                           */
 /* ============================================================= */
 
 * {
@@ -62,6 +61,14 @@ body.dark-mode .header {
 
 .header h2 {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
 }
 
 .header-actions button {
@@ -87,7 +94,7 @@ body.dark-mode .header-actions button:hover {
   background: rgba(255, 236, 179, 0.15);
 }
 
-/* Upload Box */
+/* Upload Box with Cloud Sync */
 .upload-box {
   padding: 8px 14px;
   background: white;
@@ -112,6 +119,7 @@ body.dark-mode .upload-box {
   border-radius: 6px;
   font-size: 11px;
   background: white;
+  cursor: pointer;
 }
 
 body.dark-mode #masterFile {
@@ -138,10 +146,82 @@ body.dark-mode #uploadStatus {
   border-radius: 6px;
   font-size: 10px;
   cursor: pointer;
+  transition: 0.2s;
+  font-weight: 600;
 }
 
 #clearFileBtn:hover {
   background: #e53935;
+  transform: translateY(-1px);
+}
+
+/* Cloud Sync Buttons */
+#configBtn {
+  transition: all 0.2s;
+}
+
+#configBtn:hover {
+  background: #f0f0f0 !important;
+  border-color: #999 !important;
+  transform: translateY(-1px);
+}
+
+body.dark-mode #configBtn {
+  background: #2d2d2d !important;
+  border-color: #444 !important;
+  color: #ccc !important;
+}
+
+body.dark-mode #configBtn:hover {
+  background: #3d3d3d !important;
+}
+
+#syncBtn {
+  transition: all 0.2s;
+  position: relative;
+}
+
+#syncBtn:not(:disabled):hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+#syncBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#syncStatus {
+  font-style: italic;
+  transition: color 0.2s;
+}
+
+/* Tooltip for Sync Button */
+#syncBtn::after {
+  content: "Right-click to restore from cloud";
+  position: absolute;
+  bottom: -32px;
+  right: 0;
+  background: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+#syncBtn:hover::after {
+  opacity: 1;
+}
+
+body.dark-mode #syncBtn::after {
+  background: #555;
 }
 
 /* Top Controls – ONE ROW */
@@ -168,10 +248,22 @@ body.dark-mode .top-controls {
   border: 1px solid #ddd;
   border-radius: 6px;
   height: 32px;
+  transition: all 0.2s;
 }
 
 .top-controls select {
   min-width: 110px;
+  cursor: pointer;
+}
+
+.top-controls button {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.top-controls button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 #skuCodeDisplay {
@@ -184,6 +276,7 @@ body.dark-mode .top-controls {
 body.dark-mode #skuCodeDisplay {
   background: #2d2d2d;
   color: #fff;
+  border-color: #444;
 }
 
 #searchInput {
@@ -195,6 +288,11 @@ body.dark-mode #skuCodeDisplay {
 #addBtn {
   background: #007bff;
   color: white;
+  border: none;
+}
+
+#addBtn:hover:not(:disabled) {
+  background: #0056b3;
 }
 
 #addBtn:disabled {
@@ -207,6 +305,11 @@ body.dark-mode #skuCodeDisplay {
   background: #28a745;
   color: white;
   font-weight: 600;
+  border: none;
+}
+
+#exportBtn:hover:not(:disabled) {
+  background: #218838;
 }
 
 #exportBtn:disabled {
@@ -218,6 +321,7 @@ body.dark-mode #skuCodeDisplay {
 .btn-clear {
   background: #dc3545;
   color: white;
+  border: none;
 }
 
 .btn-clear:hover:not(:disabled) {
@@ -252,7 +356,7 @@ body.dark-mode .top-controls button:not(:disabled) {
 .main-table th {
   background: #f8f9fa;
   color: #495057;
-  padding: 6px 6px;
+  padding: 8px 6px;
   text-align: left;
   font-weight: 600;
   position: sticky;
@@ -260,7 +364,7 @@ body.dark-mode .top-controls button:not(:disabled) {
   z-index: 10;
   font-size: 10px;
   white-space: nowrap;
-  border-bottom: 1px solid #eee;
+  border-bottom: 2px solid #dee2e6;
 }
 
 body.dark-mode .main-table th {
@@ -270,13 +374,17 @@ body.dark-mode .main-table th {
 }
 
 .main-table td {
-  padding: 4px 6px;
+  padding: 6px 6px;
   border-bottom: 1px solid #eee;
   vertical-align: middle;
 }
 
 body.dark-mode .main-table td {
   border-color: #333;
+}
+
+.main-table tbody tr {
+  transition: background 0.15s;
 }
 
 .main-table tbody tr:hover {
@@ -296,16 +404,27 @@ body.dark-mode .main-table tbody tr:hover {
   border-radius: 4px;
   font-size: 11px;
   background: white;
+  transition: border-color 0.2s;
+}
+
+.main-table input[type="number"]:focus,
+.main-table input[type="text"]:focus {
+  outline: none;
+  border-color: #007bff;
 }
 
 .main-table input.supplier-input {
-  width: 100px;
+  width: 120px;
 }
 
 body.dark-mode .main-table input {
   background: #2d2d2d;
   color: #fff;
   border-color: #444;
+}
+
+body.dark-mode .main-table input:focus {
+  border-color: #0d6efd;
 }
 
 /* Toggle & Remove Buttons */
@@ -323,6 +442,7 @@ body.dark-mode .main-table input {
   align-items: center;
   justify-content: center;
   color: #666;
+  transition: all 0.2s;
 }
 
 body.dark-mode .toggle-btn,
@@ -332,10 +452,12 @@ body.dark-mode .remove-btn {
 
 .toggle-btn:hover {
   background: #f0f0f0;
+  color: #333;
 }
 
 body.dark-mode .toggle-btn:hover {
   background: #333;
+  color: #fff;
 }
 
 .remove-btn {
@@ -345,6 +467,7 @@ body.dark-mode .toggle-btn:hover {
 .remove-btn:hover {
   background: #ffebee;
   color: #c62828;
+  transform: scale(1.1);
 }
 
 body.dark-mode .remove-btn:hover {
@@ -360,9 +483,9 @@ body.dark-mode .remove-btn:hover {
 }
 
 .collapse-content {
-  padding: 6px 6px;
+  padding: 8px 8px;
   background: #f8f9fa;
-  border-top: 1px dashed #eee;
+  border-top: 1px dashed #dee2e6;
 }
 
 body.dark-mode .collapse-content {
@@ -378,37 +501,44 @@ body.dark-mode .collapse-content {
 }
 
 .inner-table th {
-  background: #f0f0f0;
-  padding: 4px 6px;
+  background: #e9ecef;
+  padding: 5px 6px;
   font-weight: 600;
   font-size: 10px;
   color: #555;
+  border-bottom: 1px solid #dee2e6;
 }
 
 body.dark-mode .inner-table th {
   background: #333;
   color: #ccc;
+  border-color: #444;
 }
 
 .inner-table td {
-  padding: 3px 6px;
-  border-bottom: 1px solid #eee;
+  padding: 4px 6px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 body.dark-mode .inner-table td {
-  border-color: #444;
+  border-color: #2d2d2d;
+}
+
+.inner-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* Pagination */
 .pagination {
-  padding: 6px 14px;
+  padding: 8px 14px;
   background: white;
   border-top: 1px solid #eee;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 11px;
+  font-weight: 600;
 }
 
 body.dark-mode .pagination {
@@ -420,11 +550,13 @@ body.dark-mode .pagination {
   background: white;
   border: 1px solid #ddd;
   color: #555;
-  padding: 4px 8px;
+  padding: 5px 10px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 11px;
-  min-width: 30px;
+  font-size: 12px;
+  min-width: 32px;
+  transition: all 0.2s;
+  font-weight: 600;
 }
 
 body.dark-mode .pagination button {
@@ -435,10 +567,13 @@ body.dark-mode .pagination button {
 
 .pagination button:hover:not(:disabled) {
   background: #f0f0f0;
+  transform: translateY(-1px);
+  border-color: #999;
 }
 
 body.dark-mode .pagination button:hover:not(:disabled) {
   background: #333;
+  border-color: #555;
 }
 
 .pagination button:disabled {
@@ -446,16 +581,26 @@ body.dark-mode .pagination button:hover:not(:disabled) {
   cursor: not-allowed;
 }
 
+#pageInfo {
+  color: #666;
+  min-width: 50px;
+  text-align: center;
+}
+
+body.dark-mode #pageInfo {
+  color: #aaa;
+}
+
 /* Sortable Headers */
 .main-table th.sortable {
   cursor: pointer;
   user-select: none;
   position: relative;
-  padding-right: 20px !important;
+  padding-right: 22px !important;
 }
 
 .main-table th.sortable:hover {
-  background: #f0f0f0 !important;
+  background: #e9ecef !important;
 }
 
 body.dark-mode .main-table th.sortable:hover {
@@ -488,6 +633,17 @@ body.dark-mode .main-table th.sortable:hover .sort-icon {
   color: #dc3545 !important;
 }
 
+/* Library Status Badge */
+#libStatus {
+  transition: all 0.3s;
+}
+
+body.dark-mode #libStatus {
+  background: #2d2d2d !important;
+  color: #ccc !important;
+  border: 1px solid #444;
+}
+
 /* Print Styles */
 @media print {
   body, .container {
@@ -497,8 +653,10 @@ body.dark-mode .main-table th.sortable:hover .sort-icon {
   .header {
     background: #fff8e1 !important;
     color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-  .header-actions, .upload-box, .top-controls, .pagination {
+  .header-actions, .upload-box, .top-controls, .pagination, #libStatus {
     display: none !important;
   }
   .main-table {
@@ -514,5 +672,81 @@ body.dark-mode .main-table th.sortable:hover .sort-icon {
   }
   .collapse-anim-wrapper {
     height: auto !important;
+    overflow: visible !important;
   }
+  .toggle-btn, .remove-btn {
+    display: none !important;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .upload-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .upload-box > div {
+    border-left: none !important;
+    border-top: 1px solid #ddd;
+    padding-left: 0 !important;
+    padding-top: 8px;
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+  
+  body.dark-mode .upload-box > div {
+    border-color: #333;
+  }
+  
+  #syncBtn::after {
+    display: none;
+  }
+  
+  .top-controls {
+    gap: 4px;
+  }
+  
+  .top-controls select,
+  .top-controls input,
+  .top-controls button {
+    font-size: 10px;
+    padding: 4px 6px;
+    height: 28px;
+  }
+  
+  .header h2 {
+    font-size: 13px;
+  }
+}
+
+/* Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+body.dark-mode .table-container::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+body.dark-mode .table-container::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+body.dark-mode .table-container::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
