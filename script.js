@@ -10,7 +10,7 @@ const DB_NAME = 'RequisitionDB', STORE_NAME = 'data', DB_VERSION = 3;
 const itemsPerPage = 8;
 let currentPage = 1;
 
-const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwm5eX24rj-uOouvUNpp_x8kpzwiYMsKutDk73eOd7-IJk1-MHbpkLqvhYNdtmSDfab1w/exec";
+const SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztJ9Jo77aonmowokGYUbHWY4cNWXH0_Z2qmIhxvFV1fqykCFcGKrWcQ7PCj-flsutRvQ/exec";
 
 let isSyncEnabled = false;
 let lastSyncTime = null;
