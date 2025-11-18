@@ -1,7 +1,6 @@
 /* ============================================================= */
 /*  Raw Material Requisition – HYBRID CLOUD SYNC                */
-/*  FINAL VERSION: Unit Fixed + "Type" Column Added             */
-/*  Qty/Unit → Unit → Qty/Pack → Pack Unit → Type (Perfect!)    */
+/*  FIXED VERSION: CORS Issue Resolved with text/plain          */
 /* ============================================================= */
 
 let masterData = [], requisitionRows = [], uploadedFileName = '';
@@ -101,7 +100,7 @@ async function loadAll() {
   });
 }
 
-/* -------------------- Google Sheets Sync (100% ORIGINAL) -------------------- */
+/* -------------------- Google Sheets Sync - FIXED -------------------- */
 function loadSyncConfig() {
   isSyncEnabled = localStorage.getItem('syncEnabled') === 'true';
   lastSyncTime = localStorage.getItem('lastSyncTime');
@@ -163,10 +162,13 @@ async function syncToCloudSilent() {
       device: navigator.userAgent.substring(0, 80)
     };
 
-    await fetch(SHEETS_WEB_APP_URL, {
+    const response = await fetch(SHEETS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain' }    });
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+
+    if (!response.ok) throw new Error('Network error');
 
     lastSyncTime = new Date().toISOString();
     localStorage.setItem('lastSyncTime', lastSyncTime);
@@ -204,10 +206,14 @@ async function syncToCloud() {
 
     if (!response.ok) throw new Error('Network error');
 
+    const result = await response.json();
+    console.log('Sync result:', result);
+
     lastSyncTime = new Date().toISOString();
     localStorage.setItem('lastSyncTime', lastSyncTime);
     updateSyncUI();
   } catch (err) {
+    console.error('Sync error:', err);
     syncStatus.textContent = 'Sync failed';
     syncStatus.style.color = '#dc3545';
     throw err;
@@ -227,6 +233,8 @@ async function restoreFromCloud() {
     if (!response.ok) throw new Error('Failed to reach sheet');
 
     const text = await response.text();
+    console.log('Restore response:', text);
+
     if (!text || text.includes('error')) {
       alert('No backup found in Google Sheets yet.\nMake a change with sync ON first.');
       return;
@@ -248,6 +256,7 @@ async function restoreFromCloud() {
     alert('Successfully restored from Google Sheets!');
     updateSyncUI();
   } catch (err) {
+    console.error('Restore error:', err);
     alert('Restore failed: ' + err.message);
     syncStatus.textContent = 'Restore failed';
     syncStatus.style.color = '#dc3545';
@@ -315,7 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('printBtn').addEventListener('click', () => window.print());
 });
 
-/* -------------------- File Upload – NOW WITH "TYPE" COLUMN -------------------- */
+/* -------------------- File Upload -------------------- */
 async function handleFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
