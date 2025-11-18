@@ -166,8 +166,7 @@ async function syncToCloudSilent() {
     await fetch(SHEETS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    });
+      headers: { 'Content-Type': 'text/plain' }    });
 
     lastSyncTime = new Date().toISOString();
     localStorage.setItem('lastSyncTime', lastSyncTime);
