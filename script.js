@@ -1,6 +1,6 @@
 /* ============================================================= */
-/*  Raw Material Requisition – HYBRID CLOUD SYNC                */
-/*  FIXED VERSION: CORS Issue Resolved with text/plain          */
+/*  Raw Material Requisition – HYBRID CLOUD SYNC + SNACKBARS     */
+/*  Now with SKU Added / Deleted + MAXIMUM CHUCHUNESS           */
 /* ============================================================= */
 
 let masterData = [], requisitionRows = [], uploadedFileName = '';
@@ -19,6 +19,49 @@ let syncInProgress = false;
 let fileInput, uploadStatus, clearFileBtn, categorySelect, skuSelect, skuCodeDisplay;
 let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
 let syncBtn, syncStatus, configBtn;
+
+/* ==================== SNACKBAR SYSTEM ==================== */
+const chuchunessMessages = [
+  "Chuchuness level: MAXIMUM",
+  "You are now 1000% chuchunik",
+  "Chuchuness overload!",
+  "The chuchuness is strong with this one",
+  "Chuchuness activated",
+  "Beep boop... chuchuness deployed",
+  "You just became more chuchunik",
+  "Chuchuness +1000 aura points",
+  "Chuchuness supremacy achieved",
+  "Maximum chuchuness detected"
+];
+
+function showSnackbar(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('snackbarContainer');
+  if (!container) return;
+
+  const snack = document.createElement('div');
+  snack.className = `snackbar ${type}`;
+
+  const icons = {
+    success: 'fa-check-circle',
+    error: 'fa-exclamation-triangle',
+    info: 'fa-info-circle',
+    chuchuness: 'fa-heart'
+  };
+
+  snack.innerHTML = `
+    <i class="fas ${icons[type] || icons.info}"></i>
+    <span>${message}</span>
+  `;
+
+  container.appendChild(snack);
+
+  requestAnimationFrame(() => snack.classList.add('show'));
+
+  setTimeout(() => {
+    snack.classList.remove('show');
+    setTimeout(() => snack.remove(), 400);
+  }, duration);
+}
 
 /* -------------------- Wait for Libraries -------------------- */
 function waitForLibs() {
@@ -94,13 +137,9 @@ async function loadAll() {
         if (masterData.length) populateCategories();
       }
       
-      // Auto-restore from cloud if sync is enabled and local data is empty
       if (isSyncEnabled === null) {
-        // First time loading - check if sync was previously enabled
         const wasSyncEnabled = localStorage.getItem('syncEnabled') === 'true';
-        if (wasSyncEnabled) {
-          await autoRestoreFromCloud();
-        }
+        if (wasSyncEnabled) await autoRestoreFromCloud();
       }
       
       renderPage();
@@ -124,15 +163,13 @@ async function autoRestoreFromCloud() {
     const cloudMaster = cloudData.masterData || [];
     const cloudFileName = cloudData.uploadedFileName || '';
 
-    // Smart merge: prioritize cloud data if local is empty
     if (requisitionRows.length === 0 && cloudRows.length > 0) {
       requisitionRows = cloudRows;
-      console.log('Restored requisition rows from cloud:', cloudRows.length);
+      showSnackbar('Restored from cloud backup!', 'success');
     }
 
     if (masterData.length === 0 && cloudMaster.length > 0) {
       masterData = cloudMaster;
-      console.log('Restored master data from cloud:', cloudMaster.length);
     }
 
     if (!uploadedFileName && cloudFileName) {
@@ -143,7 +180,6 @@ async function autoRestoreFromCloud() {
 
     if (masterData.length) populateCategories();
     
-    // Save merged data locally
     const tx = db.transaction(STORE_NAME, 'readwrite');
     await tx.objectStore(STORE_NAME).put({ 
       id: 1, 
@@ -159,7 +195,7 @@ async function autoRestoreFromCloud() {
   }
 }
 
-/* -------------------- Google Sheets Sync - FIXED -------------------- */
+/* -------------------- Google Sheets Sync -------------------- */
 function loadSyncConfig() {
   isSyncEnabled = localStorage.getItem('syncEnabled') === 'true';
   lastSyncTime = localStorage.getItem('lastSyncTime');
@@ -200,12 +236,12 @@ async function toggleSync() {
     syncStatus.textContent = 'Syncing...';
     try {
       await syncToCloud();
-      alert('Google Sheets sync ENABLED!\n\nAll changes now auto-backup to your sheet.');
+      showSnackbar('Cloud sync ENABLED!', 'success');
     } catch (e) {
-      alert('Sync enabled, but first backup failed. Will retry automatically.');
+      showSnackbar('Sync enabled (will retry)', 'info');
     }
   } else {
-    alert('Google Sheets sync disabled.\nData stays in browser only.');
+    showSnackbar('Sync disabled – local only', 'info');
   }
 }
 
@@ -265,9 +301,6 @@ async function syncToCloud() {
 
     if (!response.ok) throw new Error('Network error');
 
-    const result = await response.json();
-    console.log('Sync result:', result);
-
     lastSyncTime = new Date().toISOString();
     localStorage.setItem('lastSyncTime', lastSyncTime);
     updateSyncUI();
@@ -292,8 +325,6 @@ async function restoreFromCloud() {
     if (!response.ok) throw new Error('Failed to reach sheet');
 
     const text = await response.text();
-    console.log('Restore response:', text);
-
     if (!text || text.includes('error')) {
       alert('No backup found in Google Sheets yet.\nMake a change with sync ON first.');
       return;
@@ -312,7 +343,8 @@ async function restoreFromCloud() {
     if (masterData.length) populateCategories();
     renderPage();
 
-    alert('Successfully restored from Google Sheets!');
+    showSnackbar('Restored from cloud!', 'success');
+    showSnackbar(chuchunessMessages[Math.floor(Math.random() * chuchunessMessages.length)], 'chuchuness', 4000);
     updateSyncUI();
   } catch (err) {
     console.error('Restore error:', err);
@@ -448,10 +480,14 @@ async function handleFileUpload(e) {
       populateCategories();
       await saveAll();
 
+      showSnackbar(`Master file loaded! (${masterData.length} items)`, 'success');
+      showSnackbar(chuchunessMessages[Math.floor(Math.random() * chuchunessMessages.length)], 'chuchuness', 3500);
+
     } catch (err) {
       console.error('Upload error:', err);
       uploadStatus.textContent = 'ERROR: ' + err.message;
       uploadStatus.style.color = 'red';
+      showSnackbar('Upload failed: ' + err.message, 'error');
     }
   };
   reader.onerror = () => {
@@ -527,6 +563,10 @@ async function handleAddSku() {
     unit2: skuInfo['UNIT2'] || '',
     materials: mats 
   });
+
+  // SUCCESS + CHUCHUNESS
+  showSnackbar(`${name} (${code}) added!`, 'success');
+  showSnackbar(chuchunessMessages[Math.floor(Math.random() * chuchunessMessages.length)], 'chuchuness', 3500);
 
   currentPage = Math.ceil(requisitionRows.length / itemsPerPage);
   await saveAll();
@@ -665,11 +705,19 @@ function setupInputs() {
 function setupRemove() {
   tbody.addEventListener('click', async e => {
     if (e.target.closest('.remove-btn')) {
-      const idx = +e.target.closest('.remove-btn').dataset.idx;
-      if (confirm(`Remove ${requisitionRows[idx].skuName}?`)) {
+      const btn = e.target.closest('.remove-btn');
+      const idx = +btn.dataset.idx;
+      const removedName = requisitionRows[idx].skuName;
+
+      if (confirm(`Remove ${removedName}?`)) {
         requisitionRows.splice(idx, 1);
         await saveAll(); 
         renderPage();
+        
+        showSnackbar(`${removedName} removed`, 'error');
+        if (Math.random() < 0.5) {
+          showSnackbar("chuchuness never dies...", 'chuchuness', 4000);
+        }
       }
     }
   });
@@ -698,6 +746,9 @@ async function clearAll() {
   skuCodeDisplay.value = '';
   addBtn.disabled = true;
   renderPage();
+
+  showSnackbar('Everything cleared!', 'info');
+  showSnackbar('Fresh start... chuchuness reloaded', 'chuchuness', 4000);
 }
 
 function handleExportAll() {
@@ -757,4 +808,7 @@ function handleExportAll() {
   ];
   const fileName = `Requisition_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
   XLSX.writeFile(wb, fileName);
+
+  showSnackbar('Exported successfully!', 'success');
+  showSnackbar('Chuchuness exported too', 'chuchuness', 3500);
 }

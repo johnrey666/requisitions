@@ -750,3 +750,54 @@ body.dark-mode .table-container::-webkit-scrollbar-thumb {
 body.dark-mode .table-container::-webkit-scrollbar-thumb:hover {
   background: #777;
 }
+
+/* ==================== SNACKBAR / TOAST ==================== */
+.snackbar-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.snackbar {
+  min-width: 280px;
+  max-width: 500px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.snackbar.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.snackbar.success   { background: linear-gradient(135deg, #28a745, #20c997); }
+.snackbar.error     { background: linear-gradient(135deg, #dc3545, #e74c3c); }
+.snackbar.info      { background: linear-gradient(135deg, #007bff, #0d6efd); }
+.snackbar.chuchuness{ background: linear-gradient(135deg, #ff6b6b, #feca57); border: 2px solid #ff9ff3; }
+
+.snackbar i {
+  font-size: 18px;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .snackbar {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+}
