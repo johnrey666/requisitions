@@ -21,18 +21,7 @@ let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
 let syncBtn, syncStatus, configBtn;
 
 /* ==================== SNACKBAR SYSTEM ==================== */
-const chuchunessMessages = [
-  "Chuchuness level: MAXIMUM",
-  "You are now 1000% chuchunik",
-  "Chuchuness overload!",
-  "The chuchuness is strong with this one",
-  "Chuchuness activated",
-  "Beep boop... chuchuness deployed",
-  "You just became more chuchunik",
-  "Chuchuness +1000 aura points",
-  "Chuchuness supremacy achieved",
-  "Maximum chuchuness detected"
-];
+
 
 function showSnackbar(message, type = 'info', duration = 3000) {
   const container = document.getElementById('snackbarContainer');
@@ -45,7 +34,6 @@ function showSnackbar(message, type = 'info', duration = 3000) {
     success: 'fa-check-circle',
     error: 'fa-exclamation-triangle',
     info: 'fa-info-circle',
-    chuchuness: 'fa-heart'
   };
 
   snack.innerHTML = `
@@ -344,7 +332,6 @@ async function restoreFromCloud() {
     renderPage();
 
     showSnackbar('Restored from cloud!', 'success');
-    showSnackbar(chuchunessMessages[Math.floor(Math.random() * chuchunessMessages.length)], 'chuchuness', 4000);
     updateSyncUI();
   } catch (err) {
     console.error('Restore error:', err);
@@ -481,7 +468,6 @@ async function handleFileUpload(e) {
       await saveAll();
 
       showSnackbar(`Master file loaded! (${masterData.length} items)`, 'success');
-      showSnackbar(chuchunessMessages[Math.floor(Math.random() * chuchunessMessages.length)], 'chuchuness', 3500);
 
     } catch (err) {
       console.error('Upload error:', err);
@@ -566,7 +552,6 @@ async function handleAddSku() {
 
   // SUCCESS + CHUCHUNESS
   showSnackbar(`${name} (${code}) added!`, 'success');
-  showSnackbar(chuchunessMessages[Math.floor(Math.random() * chuchunessMessages.length)], 'chuchuness', 3500);
 
   currentPage = Math.ceil(requisitionRows.length / itemsPerPage);
   await saveAll();
@@ -716,7 +701,6 @@ function setupRemove() {
         
         showSnackbar(`${removedName} removed`, 'error');
         if (Math.random() < 0.5) {
-          showSnackbar("chuchuness never dies...", 'chuchuness', 4000);
         }
       }
     }
@@ -748,7 +732,6 @@ async function clearAll() {
   renderPage();
 
   showSnackbar('Everything cleared!', 'info');
-  showSnackbar('Fresh start... chuchuness reloaded', 'chuchuness', 4000);
 }
 
 function handleExportAll() {
@@ -810,5 +793,4 @@ function handleExportAll() {
   XLSX.writeFile(wb, fileName);
 
   showSnackbar('Exported successfully!', 'success');
-  showSnackbar('Chuchuness exported too', 'chuchuness', 3500);
 }
