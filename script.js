@@ -764,33 +764,77 @@ function handleExportAll() {
   const data = [
     ['RAW MATERIAL REQUISITION'],
     ['Generated', new Date().toLocaleString('en-PH')],
-    ['File', uploadedFileName || 'None'],
-    [], 
-    ['SKU Code', 'SKU', 'Category', 'Qty Needed', 'Supplier', 'Qty/Unit', 'Unit', 'Qty/Pack', 'Pack Unit', 'Raw Material', 'Qty/Batch', 'Unit', 'Type', 'Total Req']
+    ['Master File', uploadedFileName || 'None'],
+    [''], // empty row
+    ['SKU Code', 'SKU', 'Category', 'Qty Needed', 'Supplier', 'Raw Material', 'Qty/Batch', 'Unit', 'Type', 'Total Required']
   ];
 
-  items.forEach(i => {
-    i.materials.forEach(m => {
-      const totalQty = (parseFloat(m.qty) || 0) * i.qtyNeeded;
+  items.forEach(item => {
+    const hasMaterials = item.materials && item.materials.length > 0;
+    if (!hasMaterials) return;
+
+    item.materials.forEach((m, index) => {
+      const totalQty = (parseFloat(m.qty) || 0) * item.qtyNeeded;
       const total = totalQty + (m.unit ? ' ' + m.unit : '');
-      data.push([
-        i.skuCode, i.skuName, i.category, i.qtyNeeded, i.supplier,
-        i.qtyPerUnit || '', i.unit || '', i.qtyPerPack || '', i.unit2 || '',
-        m.name, m.qty, m.unit, m.type || '', total
-      ]);
+
+      // Only fill SKU info on the FIRST material row
+      if (index === 0) {
+        data.push([
+          item.skuCode,
+          item.skuName,
+          item.category,
+          item.qtyNeeded,
+          item.supplier || '',
+          m.name,
+          m.qty,
+          m.unit || '',
+          m.type || '',
+          total
+        ]);
+      } else {
+        // Leave first 5 columns blank for subsequent rows
+        data.push([
+          '', '', '', '', '',
+          m.name,
+          m.qty,
+          m.unit || '',
+          m.type || '',
+          total
+        ]);
+      }
     });
   });
 
   const ws = XLSX.utils.aoa_to_sheet(data);
+
+  // Column widths
+  ws['!cols'] = [
+    { wch: 12 },  // SKU Code
+    { wch: 30 },  // SKU Name
+    { wch: 15 },  // Category
+    { wch: 10 },  // Qty Needed
+    { wch: 20 },  // Supplier
+    { wch: 35 },  // Raw Material
+    { wch: 12 },  // Qty/Batch
+    { wch: 8 },   // Unit
+    { wch: 10 },  // Type
+    { wch: 16 }   // Total Required
+  ];
+
+  // Optional: Make header bold
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const cell = ws[XLSX.utils.encode_cell({r: 4, c: C})]; // header row (5th row = index 4)
+    if (cell) {
+      cell.s = { font: { bold: true } };
+    }
+  }
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Requisition');
-  ws['!cols'] = [
-    { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 10 },
-    { wch: 20 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 10 },
-    { wch: 35 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 15 }
-  ];
+
   const fileName = `Requisition_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
   XLSX.writeFile(wb, fileName);
 
-  showSnackbar('Exported successfully!', 'success');
+  showSnackbar('Exported successfully! (Grouped view)', 'success');
 }
