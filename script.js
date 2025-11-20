@@ -2,7 +2,6 @@
 /*  Raw Material Requisition – HYBRID CLOUD SYNC + SNACKBARS     */
 /*  Now with SKU Added / Deleted + MAXIMUM CHUCHUNESS           */
 /*  + TYPE FILTER INSIDE EVERY COLLAPSIBLE (pre-mix, packaging, vegies) */
-/*  MEAT & VEG MERGED + 4-WAY EXPORT DROPDOWN ADDED              */
 /* ============================================================= */
 
 let masterData = [], requisitionRows = [], uploadedFileName = '';
@@ -19,7 +18,7 @@ let syncInProgress = false;
 
 // DOM elements
 let fileInput, uploadStatus, clearFileBtn, categorySelect, skuSelect, skuCodeDisplay;
-let addBtn, exportBtn, exportSelect, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
+let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
 let syncBtn, syncStatus, configBtn;
 
 /* ==================== SNACKBAR SYSTEM ==================== */
@@ -351,7 +350,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   skuCodeDisplay = document.getElementById('skuCodeDisplay');
   addBtn = document.getElementById('addBtn');
   exportBtn = document.getElementById('exportBtn');
-  exportSelect = document.getElementById('exportSelect'); // ← NEW: Export dropdown
   clearBtn = document.getElementById('clearBtn');
   tbody = document.getElementById('reqBody');
   prevBtn = document.getElementById('prevBtn');
@@ -372,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   addBtn.addEventListener('click', handleAddSku);
   prevBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderPage(); });
   nextBtn.addEventListener('click', () => { currentPage++; renderPage(); });
-  exportBtn.addEventListener('click', handleExportAll); // ← Now reads dropdown
+  exportBtn.addEventListener('click', handleExportAll);
   clearBtn.addEventListener('click', clearAll);
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value.trim().toLowerCase();
@@ -402,7 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('printBtn').addEventListener('click', () => window.print());
 });
 
-/* -------------------- File Upload: Merge Raw + Veggies -------------------- */
+/* -------------------- File Upload & SKU Handling -------------------- */
 async function handleFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -457,13 +455,6 @@ async function handleFileUpload(e) {
           'TYPE': (r[col.type] || '').toString().trim()
         }))
         .filter(r => r['CATEGORY'] && r['SKU CODE'] && r['SKU']);
-
-      // ← MERGE RAW + VEGGIES INTO "Meat & Veg"
-      masterData.forEach(item => {
-        if (item['CATEGORY'] === 'Raw' || item['CATEGORY'] === 'Veggies') {
-          item['CATEGORY'] = 'Meat & Veg';
-        }
-      });
 
       if (masterData.length === 0) throw new Error('No valid data rows found.');
 
@@ -616,6 +607,7 @@ function renderPage() {
     `;
     tbody.appendChild(tr);
 
+    // COLLAPSIBLE WITH TYPE FILTER
     const det = document.createElement('tr');
     det.id = rowId;
 
@@ -627,7 +619,7 @@ function renderPage() {
         <div class="collapse-anim-wrapper">
           <div class="collapse-content">
             <div class="raw-type-filter">
-              <span>Filter by Type:</span>
+              <span><i class="fas fa-filter"></i> Filter by Type:</span>
               <select class="raw-type-select">
                 <option value="">All Types</option>
                 ${typeOptions}
@@ -707,6 +699,7 @@ function setupCollapse() {
         w.classList.remove('open');
         i.classList.replace('fa-chevron-up', 'fa-chevron-down');
 
+        // Reset filter on close
         const select = w.querySelector('.raw-type-select');
         if (select) select.value = '';
         w.querySelectorAll('.raw-row').forEach(row => row.style.display = '');
@@ -795,28 +788,30 @@ async function clearAll() {
   showSnackbar('Everything cleared!', 'info');
 }
 
-/* ==================== NEW: 4-WAY EXPORT WITH DROPDOWN ==================== */
 function handleExportAll() {
   if (typeof XLSX === 'undefined' || typeof saveAs === 'undefined') {
     alert("Export libraries not loaded. Please refresh.");
     return;
   }
 
-  const exportType = exportSelect.value;
   let items = [...requisitionRows];
-
-  // Filter based on dropdown
-  if (exportType === 'meatveg') {
-    items = items.filter(i => i.category === 'Meat & Veg');
-  } else if (exportType === 'premix') {
-    items = items.filter(i => i.category === 'Pre-Mix');
-  } else if (exportType === 'packaging') {
-    items = items.filter(i => i.category === 'Packaging');
+  if (searchQuery) {
+    items = items.filter(i =>
+      i.skuCode.toLowerCase().includes(searchQuery) ||
+      i.skuName.toLowerCase().includes(searchQuery) ||
+      i.category.toLowerCase().includes(searchQuery)
+    );
   }
-  // 'all' = no filter
+  if (sortField) {
+    items.sort((a, b) => {
+      const A = (a[sortField] || '').toString().toLowerCase();
+      const B = (b[sortField] || '').toString().toLowerCase();
+      return (A < B ? -1 : A > B ? 1 : 0) * (sortAsc ? 1 : -1);
+    });
+  }
 
   if (items.length === 0) {
-    alert("No data to export for selected category.");
+    alert("No data to export.");
     return;
   }
 
@@ -824,38 +819,62 @@ function handleExportAll() {
     ['RAW MATERIAL REQUISITION'],
     ['Generated', new Date().toLocaleString('en-PH')],
     ['Master File', uploadedFileName || 'None'],
-    ['Filter', exportType === 'all' ? 'All Categories' : exportType === 'meatveg' ? 'Meat & Veg Only' : exportType === 'premix' ? 'Pre-Mix Only' : 'Packaging Only'],
-    [''],
+    [''], // empty row
     ['SKU Code', 'SKU', 'Category', 'Qty Needed', 'Supplier', 'Raw Material', 'Qty/Batch', 'Unit', 'Type', 'Total Required']
   ];
 
   items.forEach(item => {
+    const hasMaterials = item.materials && item.materials.length > 0;
+    if (!hasMaterials) return;
+
     item.materials.forEach((m, index) => {
       const totalQty = (parseFloat(m.qty) || 0) * item.qtyNeeded;
       const total = totalQty + (m.unit ? ' ' + m.unit : '');
 
       if (index === 0) {
-        data.push([item.skuCode, item.skuName, item.category, item.qtyNeeded, item.supplier || '', m.name, m.qty, m.unit || '', m.type || '', total]);
+        data.push([
+          item.skuCode,
+          item.skuName,
+          item.category,
+          item.qtyNeeded,
+          item.supplier || '',
+          m.name,
+          m.qty,
+          m.unit || '',
+          m.type || '',
+          total
+        ]);
       } else {
-        data.push(['', '', '', '', '', m.name, m.qty, m.unit || '', m.type || '', total]);
+        data.push([
+          '', '', '', '', '',
+          m.name,
+          m.qty,
+          m.unit || '',
+          m.type || '',
+          total
+        ]);
       }
     });
   });
 
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:12},{wch:30},{wch:15},{wch:10},{wch:20},{wch:35},{wch:12},{wch:8},{wch:10},{wch:16}];
+
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 10 }, { wch: 20 },
+    { wch: 35 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 16 }
+  ];
 
   const range = XLSX.utils.decode_range(ws['!ref']);
   for (let C = range.s.c; C <= range.e.c; ++C) {
-    const cell = ws[XLSX.utils.encode_cell({r:5, c:C})];
+    const cell = ws[XLSX.utils.encode_cell({r: 4, c: C})];
     if (cell) cell.s = { font: { bold: true } };
   }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Requisition');
-  const suffix = exportType === 'all' ? '' : `_${exportType === 'meatveg' ? 'MeatVeg' : exportType === 'premix' ? 'PreMix' : 'Packaging'}`;
-  const fileName = `Requisition${suffix}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
+
+  const fileName = `Requisition_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
   XLSX.writeFile(wb, fileName);
 
-  showSnackbar(`Exported ${exportType === 'all' ? 'All' : exportType === 'meatveg' ? 'Meat & Veg' : exportType === 'premix' ? 'Pre-Mix' : 'Packaging'} successfully!`, 'success');
+  showSnackbar('Exported successfully! (Grouped view)', 'success');
 }
