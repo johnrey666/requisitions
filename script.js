@@ -1,7 +1,5 @@
 /* ============================================================= */
-/*  Raw Material Requisition – HYBRID CLOUD SYNC + SNACKBARS     */
-/*  Now with SKU Added / Deleted + MAXIMUM CHUCHUNESS           */
-/*  + TYPE FILTER INSIDE EVERY COLLAPSIBLE (pre-mix, packaging, vegies) */
+/*  Raw Material Requisition – WITH TYPE FILTER IN COLLAPSIBLE & EXPORT DROPDOWN */
 /* ============================================================= */
 
 let masterData = [], requisitionRows = [], uploadedFileName = '';
@@ -20,6 +18,28 @@ let syncInProgress = false;
 let fileInput, uploadStatus, clearFileBtn, categorySelect, skuSelect, skuCodeDisplay;
 let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
 let syncBtn, syncStatus, configBtn;
+
+/* ==================== TYPE MAPPING ==================== */
+const typeMapping = {
+  'meat-veg': ['raw', 'meat', 'chicken', 'pork', 'beef', 'fish', 'veggies', 'vegetables', 'vegetable', 'veg'],
+  'pre-mix': ['pre-mix', 'premix'],
+  'packaging': ['packaging']
+};
+
+function mapTypeToFilter(type) {
+  if (!type) return '';
+  
+  const lowerType = type.toLowerCase().trim();
+  
+  // Check mapped types
+  for (const [filterType, keywords] of Object.entries(typeMapping)) {
+    if (keywords.some(keyword => lowerType.includes(keyword))) {
+      return filterType;
+    }
+  }
+  
+  return ''; // Return empty if no mapping found
+}
 
 /* ==================== SNACKBAR SYSTEM ==================== */
 function showSnackbar(message, type = 'info', duration = 3000) {
@@ -339,7 +359,7 @@ async function restoreFromCloud() {
   }
 }
 
-/* -------------------- DOM Ready -------------------- */
+/* ==================== INITIALIZATION ==================== */
 document.addEventListener('DOMContentLoaded', async () => {
   await waitForLibs();
   fileInput = document.getElementById('masterFile');
@@ -370,7 +390,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   addBtn.addEventListener('click', handleAddSku);
   prevBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderPage(); });
   nextBtn.addEventListener('click', () => { currentPage++; renderPage(); });
-  exportBtn.addEventListener('click', handleExportAll);
+  
+  // Export dropdown handlers
+  exportBtn.addEventListener('click', () => handleExportAll('all'));
+  document.querySelectorAll('.export-options button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const exportType = e.target.dataset.export;
+      handleExportAll(exportType);
+    });
+  });
+  
   clearBtn.addEventListener('click', clearAll);
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value.trim().toLowerCase();
@@ -558,11 +587,12 @@ async function handleAddSku() {
   addBtn.disabled = true;
 }
 
-/* ==================== RENDER PAGE WITH TYPE FILTER ==================== */
+/* ==================== RENDER PAGE WITH TYPE FILTER IN COLLAPSIBLE ==================== */
 function renderPage() {
   tbody.innerHTML = '';
   let items = [...requisitionRows];
 
+  // Apply search filter
   if (searchQuery) {
     items = items.filter(i =>
       i.skuCode.toLowerCase().includes(searchQuery) ||
@@ -611,8 +641,14 @@ function renderPage() {
     const det = document.createElement('tr');
     det.id = rowId;
 
-    const types = [...new Set(item.materials.map(m => m.type || '').filter(Boolean))].sort();
-    const typeOptions = types.map(t => `<option value="${t.trim().toLowerCase()}">${t.trim()}</option>`).join('');
+    // Get unique mapped types from materials
+    const types = [...new Set(item.materials.map(m => mapTypeToFilter(m.type)).filter(Boolean))].sort();
+    const typeOptions = types.map(t => {
+      const displayName = t === 'meat-veg' ? 'Meat & Vegetables' : 
+                         t === 'pre-mix' ? 'Pre-mix' : 
+                         t === 'packaging' ? 'Packaging' : t;
+      return `<option value="${t}">${displayName}</option>`;
+    }).join('');
 
     det.innerHTML = `
       <td colspan="12" style="padding:0;">
@@ -639,8 +675,8 @@ function renderPage() {
               <tbody>
                 ${item.materials.map(m => {
                   const total = (parseFloat(m.qty) || 0) * item.qtyNeeded;
-                  const typeKey = (m.type || '').trim().toLowerCase();
-                  return `<tr class="raw-row" data-type="${typeKey}">
+                  const mappedType = mapTypeToFilter(m.type);
+                  return `<tr class="raw-row" data-type="${mappedType}">
                     <td><strong>${m.name}</strong></td>
                     <td>${m.qty}</td>
                     <td>${m.unit}</td>
@@ -788,13 +824,16 @@ async function clearAll() {
   showSnackbar('Everything cleared!', 'info');
 }
 
-function handleExportAll() {
+/* ==================== EXPORT FUNCTIONALITY ==================== */
+function handleExportAll(exportType = 'all') {
   if (typeof XLSX === 'undefined' || typeof saveAs === 'undefined') {
     alert("Export libraries not loaded. Please refresh.");
     return;
   }
 
   let items = [...requisitionRows];
+  
+  // Apply current search filter if any
   if (searchQuery) {
     items = items.filter(i =>
       i.skuCode.toLowerCase().includes(searchQuery) ||
@@ -802,6 +841,7 @@ function handleExportAll() {
       i.category.toLowerCase().includes(searchQuery)
     );
   }
+
   if (sortField) {
     items.sort((a, b) => {
       const A = (a[sortField] || '').toString().toLowerCase();
@@ -819,6 +859,7 @@ function handleExportAll() {
     ['RAW MATERIAL REQUISITION'],
     ['Generated', new Date().toLocaleString('en-PH')],
     ['Master File', uploadedFileName || 'None'],
+    ['Export Type', getExportTypeDisplayName(exportType)],
     [''], // empty row
     ['SKU Code', 'SKU', 'Category', 'Qty Needed', 'Supplier', 'Raw Material', 'Qty/Batch', 'Unit', 'Type', 'Total Required']
   ];
@@ -827,7 +868,15 @@ function handleExportAll() {
     const hasMaterials = item.materials && item.materials.length > 0;
     if (!hasMaterials) return;
 
-    item.materials.forEach((m, index) => {
+    // Apply type filtering to materials within each item for export
+    let materialsToExport = item.materials;
+    if (exportType !== 'all') {
+      materialsToExport = item.materials.filter(m => mapTypeToFilter(m.type) === exportType);
+    }
+
+    if (materialsToExport.length === 0) return;
+
+    materialsToExport.forEach((m, index) => {
       const totalQty = (parseFloat(m.qty) || 0) * item.qtyNeeded;
       const total = totalQty + (m.unit ? ' ' + m.unit : '');
 
@@ -873,8 +922,18 @@ function handleExportAll() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Requisition');
 
-  const fileName = `Requisition_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
+  const fileName = `Requisition_${exportType === 'all' ? 'All' : getExportTypeDisplayName(exportType).replace(/&/g, 'and').replace(/\s+/g, '')}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
   XLSX.writeFile(wb, fileName);
 
-  showSnackbar('Exported successfully! (Grouped view)', 'success');
+  showSnackbar(`Exported ${getExportTypeDisplayName(exportType).toLowerCase()} successfully!`, 'success');
+}
+
+function getExportTypeDisplayName(exportType) {
+  switch(exportType) {
+    case 'all': return 'All Data';
+    case 'pre-mix': return 'Pre-mix Only';
+    case 'packaging': return 'Packaging Only';
+    case 'meat-veg': return 'Meat & Vegetables Only';
+    default: return exportType;
+  }
 }

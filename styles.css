@@ -301,6 +301,7 @@ body.dark-mode #skuCodeDisplay {
   cursor: not-allowed;
 }
 
+
 #exportBtn {
   background: #28a745;
   color: white;
@@ -844,3 +845,4 @@ body.dark-mode .raw-type-filter select {
   position: relative; /* Needed for absolute positioning of filter */
   padding-top: 36px !important; /* Make space for filter */
 }
+

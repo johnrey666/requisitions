@@ -4,19 +4,159 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Raw Material Requisition - Cloud Sync</title>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
-
   <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  
+ 
   <!-- App Script -->
   <script defer src="script.js"></script>
+ 
+  <style>
+    /* === ENHANCED EXPORT DROPDOWN === */
+    .export-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    #exportBtn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(40,167,69,0.3);
+    }
+
+    #exportBtn:hover {
+      background: #218838;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(40,167,69,0.4);
+    }
+
+    #exportBtn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .export-options {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      overflow: hidden;
+      min-width: 260px;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid #e2e8f0;
+    }
+
+    .export-dropdown:hover .export-options,
+    .export-dropdown:focus-within .export-options {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .export-options::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-left: 1px solid #e2e8f0;
+      border-top: 1px solid #e2e8f0;
+      transform: rotate(45deg);
+      z-index: -1;
+    }
+
+    .export-options button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #2d3748;
+      transition: all 0.2s ease;
+    }
+
+    .export-options button i {
+      width: 18px;
+      font-size: 15px;
+      opacity: 0.7;
+    }
+
+    .export-options button:hover {
+      background: #f1f5f9;
+      color: #1e40af;
+    }
+
+    .export-options button:hover i {
+      opacity: 1;
+    }
+
+    /* Dark Mode Support */
+    .dark-mode .export-options {
+      background: #1a202c;
+      border-color: #4a5568;
+    }
+
+    .dark-mode .export-options::before {
+      background: #1a202c;
+      border-color: #4a5568;
+    }
+
+    .dark-mode .export-options button {
+      color: #e2e8f0;
+    }
+
+    .dark-mode .export-options button:hover {
+      background: #2d3748;
+      color: #90cdf4;
+    }
+
+    /* Responsive adjustment */
+    @media (max-width: 768px) {
+      .export-options {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+      }
+      .export-dropdown:hover .export-options,
+      .export-dropdown:focus-within .export-options {
+        transform: translateX(-50%) translateY(0);
+      }
+      .export-options::before {
+        right: auto;
+        left: 50%;
+        margin-left: -8px;
+      }
+    }
+  </style>
 </head>
 <body>
-
   <div class="container">
     <!-- Header -->
     <div class="header">
@@ -32,7 +172,7 @@
       <input type="file" id="masterFile" accept=".xlsx" />
       <span id="uploadStatus">Upload MasterTable.xlsx</span>
       <button id="clearFileBtn" style="display:none;">Clear</button>
-      
+     
       <div style="margin-left:auto;display:flex;align-items:center;gap:8px;border-left:1px solid #ddd;padding-left:12px;">
         <button id="configBtn" title="View Config" style="padding:4px 8px;border:1px solid #ddd;background:white;border-radius:6px;cursor:pointer;">
           <i class="fas fa-cog"></i>
@@ -51,7 +191,34 @@
       <input type="text" id="skuCodeDisplay" placeholder="Code" readonly />
       <button id="addBtn" disabled><i class="fas fa-plus"></i> Add</button>
       <input type="text" id="searchInput" placeholder="Search Code/SKU/Category..." />
-      <button id="exportBtn" disabled><i class="fas fa-file-excel"></i> Export All</button>
+     
+      <!-- ENHANCED EXPORT DROPDOWN -->
+      <div class="export-dropdown" tabindex="-1">
+        <button id="exportBtn" disabled>
+          <i class="fas fa-file-excel"></i>
+          <span>Export All</span>
+          <i class="fas fa-chevron-down" style="font-size:11px;margin-left:4px;"></i>
+        </button>
+        <div class="export-options">
+          <button data-export="all">
+            <i class="fas fa-file-export"></i>
+            <span>Export All Data</span>
+          </button>
+          <button data-export="pre-mix">
+            <i class="fas fa-blender"></i>
+            <span>Export Pre-mix Only</span>
+          </button>
+          <button data-export="packaging">
+            <i class="fas fa-box-open"></i>
+            <span>Export Packaging Only</span>
+          </button>
+          <button data-export="meat-veg">
+            <i class="fas fa-drumstick-bite"></i>
+            <span>Export Meat & Vegetables Only</span>
+          </button>
+        </div>
+      </div>
+     
       <button id="clearBtn" class="btn-clear"><i class="fas fa-trash"></i> Clear All</button>
     </div>
 
