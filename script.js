@@ -1,6 +1,7 @@
 /* ============================================================= */
 /*  Raw Material Requisition – HYBRID CLOUD SYNC + SNACKBARS     */
 /*  Now with SKU Added / Deleted + MAXIMUM CHUCHUNESS           */
+/*  + TYPE FILTER INSIDE EVERY COLLAPSIBLE (pre-mix, packaging, vegies) */
 /* ============================================================= */
 
 let masterData = [], requisitionRows = [], uploadedFileName = '';
@@ -21,8 +22,6 @@ let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
 let syncBtn, syncStatus, configBtn;
 
 /* ==================== SNACKBAR SYSTEM ==================== */
-
-
 function showSnackbar(message, type = 'info', duration = 3000) {
   const container = document.getElementById('snackbarContainer');
   if (!container) return;
@@ -42,7 +41,6 @@ function showSnackbar(message, type = 'info', duration = 3000) {
   `;
 
   container.appendChild(snack);
-
   requestAnimationFrame(() => snack.classList.add('show'));
 
   setTimeout(() => {
@@ -402,7 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('printBtn').addEventListener('click', () => window.print());
 });
 
-/* -------------------- File Upload -------------------- */
+/* -------------------- File Upload & SKU Handling -------------------- */
 async function handleFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -550,7 +548,6 @@ async function handleAddSku() {
     materials: mats 
   });
 
-  // SUCCESS + CHUCHUNESS
   showSnackbar(`${name} (${code}) added!`, 'success');
 
   currentPage = Math.ceil(requisitionRows.length / itemsPerPage);
@@ -561,6 +558,7 @@ async function handleAddSku() {
   addBtn.disabled = true;
 }
 
+/* ==================== RENDER PAGE WITH TYPE FILTER ==================== */
 function renderPage() {
   tbody.innerHTML = '';
   let items = [...requisitionRows];
@@ -609,14 +607,52 @@ function renderPage() {
     `;
     tbody.appendChild(tr);
 
-    const det = document.createElement('tr'); 
+    // COLLAPSIBLE WITH TYPE FILTER
+    const det = document.createElement('tr');
     det.id = rowId;
-    det.innerHTML = `<td colspan="12" style="padding:0;"><div class="collapse-anim-wrapper"><div class="collapse-content"><table class="inner-table"><thead><tr><th>Raw Material</th><th>Qty/Batch</th><th>Unit</th><th>Type</th><th>Total Req</th></tr></thead><tbody>
-      ${item.materials.map(m => {
-        const total = (parseFloat(m.qty) || 0) * item.qtyNeeded;
-        return `<tr><td><strong>${m.name}</strong></td><td>${m.qty}</td><td>${m.unit}</td><td>${m.type || '-'}</td><td>${total} ${m.unit}</td></tr>`;
-      }).join('')}
-    </tbody></table></div></div></td>`;
+
+    const types = [...new Set(item.materials.map(m => m.type || '').filter(Boolean))].sort();
+    const typeOptions = types.map(t => `<option value="${t.trim().toLowerCase()}">${t.trim()}</option>`).join('');
+
+    det.innerHTML = `
+      <td colspan="12" style="padding:0;">
+        <div class="collapse-anim-wrapper">
+          <div class="collapse-content">
+            <div class="raw-type-filter">
+              <span><i class="fas fa-filter"></i> Filter by Type:</span>
+              <select class="raw-type-select">
+                <option value="">All Types</option>
+                ${typeOptions}
+              </select>
+            </div>
+
+            <table class="inner-table">
+              <thead>
+                <tr>
+                  <th>Raw Material</th>
+                  <th>Qty/Batch</th>
+                  <th>Unit</th>
+                  <th>Type</th>
+                  <th>Total Req</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${item.materials.map(m => {
+                  const total = (parseFloat(m.qty) || 0) * item.qtyNeeded;
+                  const typeKey = (m.type || '').trim().toLowerCase();
+                  return `<tr class="raw-row" data-type="${typeKey}">
+                    <td><strong>${m.name}</strong></td>
+                    <td>${m.qty}</td>
+                    <td>${m.unit}</td>
+                    <td>${m.type || '-'}</td>
+                    <td>${total} ${m.unit}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </td>`;
     tbody.appendChild(det);
   });
 
@@ -630,10 +666,53 @@ function renderPage() {
   });
 
   updateSortIcons();
-  setupCollapse(); 
+  setupCollapse();
+  setupTypeFilters();
   setupInputs(); 
   setupRemove();
   setupPagination(items.length);
+}
+
+function setupTypeFilters() {
+  document.querySelectorAll('.raw-type-select').forEach(select => {
+    select.onchange = function () {
+      const value = this.value;
+      const container = this.closest('.collapse-content');
+      const rows = container.querySelectorAll('.raw-row');
+      rows.forEach(row => {
+        row.style.display = (!value || row.dataset.type === value) ? '' : 'none';
+      });
+    };
+  });
+}
+
+function setupCollapse() {
+  document.querySelectorAll('.toggle-btn').forEach(b => {
+    b.onclick = () => {
+      const r = document.getElementById(b.dataset.target);
+      const w = r.querySelector('.collapse-anim-wrapper');
+      const i = b.querySelector('i');
+
+      if (w.classList.contains('open')) {
+        w.style.height = w.scrollHeight + 'px';
+        requestAnimationFrame(() => w.style.height = '0px');
+        w.classList.remove('open');
+        i.classList.replace('fa-chevron-up', 'fa-chevron-down');
+
+        // Reset filter on close
+        const select = w.querySelector('.raw-type-select');
+        if (select) select.value = '';
+        w.querySelectorAll('.raw-row').forEach(row => row.style.display = '');
+      } else {
+        w.classList.add('open');
+        w.style.height = w.scrollHeight + 'px';
+        i.classList.replace('fa-chevron-down', 'fa-chevron-up');
+        w.addEventListener('transitionend', () => {
+          if (w.classList.contains('open')) w.style.height = 'auto';
+        }, { once: true });
+      }
+    };
+  });
 }
 
 function updateSortIcons() {
@@ -646,29 +725,6 @@ function updateSortIcons() {
     } else {
       icon.className = 'fas fa-sort sort-icon';
     }
-  });
-}
-
-function setupCollapse() {
-  document.querySelectorAll('.toggle-btn').forEach(b => {
-    b.onclick = () => {
-      const r = document.getElementById(b.dataset.target);
-      const w = r.querySelector('.collapse-anim-wrapper');
-      const i = b.querySelector('i');
-      if (w.classList.contains('open')) {
-        w.style.height = w.scrollHeight + 'px';
-        requestAnimationFrame(() => w.style.height = '0px');
-        w.classList.remove('open');
-        i.classList.replace('fa-chevron-up', 'fa-chevron-down');
-      } else {
-        w.classList.add('open');
-        w.style.height = w.scrollHeight + 'px';
-        i.classList.replace('fa-chevron-down', 'fa-chevron-up');
-        w.addEventListener('transitionend', () => {
-          if (w.classList.contains('open')) w.style.height = 'auto';
-        }, { once: true });
-      }
-    };
   });
 }
 
@@ -700,8 +756,6 @@ function setupRemove() {
         renderPage();
         
         showSnackbar(`${removedName} removed`, 'error');
-        if (Math.random() < 0.5) {
-        }
       }
     }
   });
@@ -777,7 +831,6 @@ function handleExportAll() {
       const totalQty = (parseFloat(m.qty) || 0) * item.qtyNeeded;
       const total = totalQty + (m.unit ? ' ' + m.unit : '');
 
-      // Only fill SKU info on the FIRST material row
       if (index === 0) {
         data.push([
           item.skuCode,
@@ -792,7 +845,6 @@ function handleExportAll() {
           total
         ]);
       } else {
-        // Leave first 5 columns blank for subsequent rows
         data.push([
           '', '', '', '', '',
           m.name,
@@ -807,27 +859,15 @@ function handleExportAll() {
 
   const ws = XLSX.utils.aoa_to_sheet(data);
 
-  // Column widths
   ws['!cols'] = [
-    { wch: 12 },  // SKU Code
-    { wch: 30 },  // SKU Name
-    { wch: 15 },  // Category
-    { wch: 10 },  // Qty Needed
-    { wch: 20 },  // Supplier
-    { wch: 35 },  // Raw Material
-    { wch: 12 },  // Qty/Batch
-    { wch: 8 },   // Unit
-    { wch: 10 },  // Type
-    { wch: 16 }   // Total Required
+    { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 10 }, { wch: 20 },
+    { wch: 35 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 16 }
   ];
 
-  // Optional: Make header bold
   const range = XLSX.utils.decode_range(ws['!ref']);
   for (let C = range.s.c; C <= range.e.c; ++C) {
-    const cell = ws[XLSX.utils.encode_cell({r: 4, c: C})]; // header row (5th row = index 4)
-    if (cell) {
-      cell.s = { font: { bold: true } };
-    }
+    const cell = ws[XLSX.utils.encode_cell({r: 4, c: C})];
+    if (cell) cell.s = { font: { bold: true } };
   }
 
   const wb = XLSX.utils.book_new();
