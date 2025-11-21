@@ -18,7 +18,7 @@ let syncInProgress = false;
 // DOM elements
 let fileInput, uploadStatus, clearFileBtn, categorySelect, skuSelect, skuCodeDisplay;
 let addBtn, exportBtn, clearBtn, tbody, prevBtn, nextBtn, pageInfo, searchInput;
-let syncBtn, restoreBtn, syncStatus, configBtn;  // ← restoreBtn added
+let syncBtn, restoreBtn, syncStatus, configBtn, exportDropdown;  // ← exportDropdown added
 
 /* ==================== TYPE MAPPING ==================== */
 const typeMapping = {
@@ -320,6 +320,37 @@ async function restoreFromCloud() {
   }
 }
 
+/* ==================== ENHANCED EXPORT DROPDOWN FUNCTIONALITY ==================== */
+function setupExportDropdown() {
+  const exportOptions = document.querySelectorAll('.export-options button');
+  
+  // Toggle dropdown on button click
+  exportBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    exportDropdown.classList.toggle('active');
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function() {
+    exportDropdown.classList.remove('active');
+  });
+  
+  // Prevent dropdown from closing when clicking inside
+  exportDropdown.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  
+  // Handle export option clicks
+  exportOptions.forEach(option => {
+    option.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const exportType = this.getAttribute('data-export');
+      handleExportAll(exportType);
+      exportDropdown.classList.remove('active');
+    });
+  });
+}
+
 /* ==================== INITIALIZATION ==================== */
 document.addEventListener('DOMContentLoaded', async () => {
   await waitForLibs();
@@ -340,9 +371,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   pageInfo = document.getElementById('pageInfo');
   searchInput = document.getElementById('searchInput');
   syncBtn = document.getElementById('syncBtn');
-  restoreBtn = document.getElementById('restoreBtn');   // ← NEW
+  restoreBtn = document.getElementById('restoreBtn');
   syncStatus = document.getElementById('syncStatus');
   configBtn = document.getElementById('configBtn');
+  exportDropdown = document.getElementById('exportDropdown'); // ← NEW
 
   await initDB();
   await loadAll();
@@ -356,11 +388,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   prevBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderPage(); });
   nextBtn.addEventListener('click', () => { currentPage++; renderPage(); });
 
-  // Export
-  exportBtn.addEventListener('click', () => handleExportAll('all'));
-  document.querySelectorAll('.export-options button').forEach(btn => {
-    btn.addEventListener('click', e => handleExportAll(e.target.dataset.export));
-  });
+  // Enhanced Export Dropdown
+  setupExportDropdown(); // ← NEW: Initialize enhanced dropdown
 
   clearBtn.addEventListener('click', clearAll);
   searchInput.addEventListener('input', () => {
@@ -370,8 +399,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // CLOUD BUTTONS
-  syncBtn.addEventListener('click', toggleSync);           // Toggle + manual sync
-  restoreBtn.addEventListener('click', restoreFromCloud); // Dedicated restore button
+  syncBtn.addEventListener('click', toggleSync);
+  restoreBtn.addEventListener('click', restoreFromCloud);
 
   configBtn.addEventListener('click', () => {
     alert(`GOOGLE SHEETS BACKUP\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nWeb App URL:\n${SHEETS_WEB_APP_URL}\n\nStatus: ${isSyncEnabled ? 'AUTO-SYNC ENABLED' : 'OFFLINE MODE'}\n${lastSyncTime ? 'Last sync: ' + new Date(lastSyncTime).toLocaleString() : ''}\n\n• Click "Synced" button → toggle sync\n• Click "Restore" button → pull latest backup`);
@@ -394,8 +423,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /* ==================== REST OF YOUR CODE (unchanged) ==================== */
-// ... (handleFileUpload, populateCategories, handleAddSku, renderPage, export, etc.)
-// → Everything from your original script below this point remains 100% identical
 
 /* -------------------- File Upload & SKU Handling -------------------- */
 async function handleFileUpload(e) {
