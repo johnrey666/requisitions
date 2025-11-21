@@ -846,3 +846,52 @@ body.dark-mode .raw-type-filter select {
   padding-top: 36px !important; /* Make space for filter */
 }
 
+#syncBtn {
+  background: #28a745 !important;
+  min-width: 110px;
+  justify-content: center;
+}
+
+#syncBtn.syncing {
+  background: #ffc107 !important;
+  animation: pulse 1.5s infinite;
+}
+
+#restoreBtn {
+  background: #17a2b8 !important; /* cyan */
+  min-width: 100px;
+  justify-content: center;
+}
+
+#restoreBtn:hover {
+  background: #138496 !important;
+  transform: translateY(-1px);
+}
+
+#syncBtn:hover {
+  background: #218838 !important;
+  transform: translateY(-1px);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Mobile wrap nicely */
+@media (max-width: 768px) {
+  .upload-box > div[style*="border-left"] {
+    border-left: none !important;
+    border-top: 1px solid #ddd;
+    padding-left: 0 !important;
+    padding-top: 8px;
+    margin-top: 8px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  #syncBtn, #restoreBtn {
+    width: 100%;
+  }
+}
